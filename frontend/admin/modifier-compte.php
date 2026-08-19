@@ -1,0 +1,82 @@
+<?php
+$pageTitle = 'Modifier un compte';
+require_once __DIR__ . '/header.php';
+require_once __DIR__ . '/../../backend/config/database.php';
+
+$pdo = getConnection();
+$id = $_GET['id'] ?? null;
+
+if (!$id) {
+    header('Location: comptes.php');
+    exit;
+}
+
+$stmt = $pdo->prepare('SELECT * FROM utilisateurs WHERE id = ?');
+$stmt->execute([$id]);
+$compte = $stmt->fetch();
+
+if (!$compte) {
+    header('Location: comptes.php');
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nom = trim($_POST['nom'] ?? '');
+    $prenom = trim($_POST['prenom'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $role = $_POST['role'] ?? $compte['role'];
+
+    if (empty($nom) || empty($prenom) || empty($email)) {
+        $error = 'Veuillez remplir tous les champs.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Adresse email invalide.';
+    } else {
+        $check = $pdo->prepare('SELECT id FROM utilisateurs WHERE email = ? AND id != ?');
+        $check->execute([$email, $id]);
+        if ($check->fetch()) {
+            $error = 'Cet email est déjà utilisé.';
+        } else {
+            $update = $pdo->prepare('UPDATE utilisateurs SET nom = ?, prenom = ?, email = ?, role = ? WHERE id = ?');
+            $update->execute([$nom, $prenom, $email, $role, $id]);
+            header('Location: comptes.php?msg=modifier');
+            exit;
+        }
+    }
+}
+?>
+
+<div class="form-card">
+    <h3>Modifier le compte de <?= htmlspecialchars($compte['prenom'] . ' ' . $compte['nom']) ?></h3>
+
+    <?php if (isset($error)): ?>
+        <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
+
+    <form method="POST" action="">
+        <div class="form-group">
+            <label for="nom">Nom</label>
+            <input type="text" id="nom" name="nom" required value="<?= htmlspecialchars($_POST['nom'] ?? $compte['nom']) ?>">
+        </div>
+        <div class="form-group">
+            <label for="prenom">Prénom</label>
+            <input type="text" id="prenom" name="prenom" required value="<?= htmlspecialchars($_POST['prenom'] ?? $compte['prenom']) ?>">
+        </div>
+        <div class="form-group">
+            <label for="email">Adresse e-mail</label>
+            <input type="email" id="email" name="email" required value="<?= htmlspecialchars($_POST['email'] ?? $compte['email']) ?>">
+        </div>
+        <div class="form-group">
+            <label for="role">Rôle</label>
+            <select id="role" name="role" required>
+                <option value="directeur" <?= ($compte['role'] === 'directeur') ? 'selected' : '' ?>>Directeur</option>
+                <option value="admin" <?= ($compte['role'] === 'admin') ? 'selected' : '' ?>>Administrateur</option>
+            </select>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <a href="comptes.php" class="btn btn-cancel">Annuler</a>
+        </div>
+    </form>
+</div>
+
+<?php require_once __DIR__ . '/footer.php'; ?>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - Complexe Scolaire ANNA</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <header>
@@ -27,7 +27,18 @@
                 <h2>Connexion</h2>
                 <p>Accédez à votre espace de gestion</p>
             </div>
-            <form class="login-form" action="#" method="post">
+
+            <?php
+            session_start();
+            if (isset($_SESSION['flash_error'])):
+            ?>
+                <div class="alert alert-error">
+                    <?= htmlspecialchars($_SESSION['flash_error']) ?>
+                    <?php unset($_SESSION['flash_error']); ?>
+                </div>
+            <?php endif; ?>
+
+            <form class="login-form" action="../backend/actions/login.php" method="POST">
                 <div class="form-group">
                     <label for="email">Adresse e-mail</label>
                     <input type="email" id="email" name="email" placeholder="exemple@ecole.com" required>
@@ -40,13 +51,10 @@
                     <label class="remember-me">
                         <input type="checkbox" name="remember"> Se souvenir de moi
                     </label>
-                    <a href="#" class="forgot-link">Mot de passe oublié ?</a>
                 </div>
                 <button type="submit" class="btn-login">Se connecter</button>
             </form>
         </div>
     </main>
-
-
 </body>
 </html>
