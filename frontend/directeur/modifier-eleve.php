@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<div class="form-card" style="max-width:700px;">
+<div class="form-card">
     <h3>Modifier l'élève : <?= htmlspecialchars($eleve['prenom'] . ' ' . $eleve['nom']) ?></h3>
 
     <?php if (isset($error)): ?>

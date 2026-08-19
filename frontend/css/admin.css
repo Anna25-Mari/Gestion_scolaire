@@ -147,6 +147,12 @@
     padding: 2rem;
 }
 
+.page-content:has(.form-card) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 /* ===== STAT CARDS ===== */
 
 .stats-grid {
@@ -380,33 +386,146 @@
 
 .form-card {
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 2.5rem 3rem;
     max-width: 600px;
+    margin: 0 auto;
+    border: 1px solid #eef1f5;
+    animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .form-card h3 {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     color: #1a2a3a;
+    margin-bottom: 0.3rem;
+    font-weight: 700;
+}
+
+.form-card > h3 + .alert {
+    margin-top: 0.8rem;
+}
+
+.form-card > h3::after {
+    content: '';
+    display: block;
+    width: 50px;
+    height: 3px;
+    background: linear-gradient(135deg, #1a5276, #2980b9);
+    border-radius: 2px;
+    margin-top: 0.6rem;
     margin-bottom: 1.5rem;
-    padding-bottom: 0.8rem;
-    border-bottom: 1px solid #eee;
+}
+
+.form-group {
+    margin-bottom: 1.4rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: #3a4a5a;
+    margin-bottom: 0.45rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    color: #2d3748;
+    background-color: #f8fafc;
+    transition: all 0.25s ease;
+    outline: none;
+    font-family: inherit;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: #a0aec0;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #2980b9;
+    box-shadow: 0 0 0 4px rgba(41, 128, 185, 0.12);
+    background-color: #fff;
+}
+
+.form-group select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23718096' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-group select[multiple] {
+    height: auto;
+    min-height: 120px;
+    padding: 0.5rem;
+}
+
+.form-group select[multiple] option {
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.form-group select[multiple] option:checked {
+    background: linear-gradient(135deg, #1a5276, #2980b9);
+    color: #fff;
+}
+
+.form-group small,
+.form-group .hint {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.8rem;
+    color: #888;
 }
 
 .form-actions {
     display: flex;
     gap: 0.8rem;
-    margin-top: 1.5rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eef1f5;
+}
+
+.form-actions .btn {
+    padding: 0.7rem 1.8rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 10px;
 }
 
 .btn-cancel {
-    background-color: #eee;
-    color: #555;
+    background-color: #edf2f7;
+    color: #4a5568;
 }
 
 .btn-cancel:hover {
-    background-color: #ddd;
+    background-color: #e2e8f0;
 }
 
 /* ===== CONFIRMATION MODAL ===== */

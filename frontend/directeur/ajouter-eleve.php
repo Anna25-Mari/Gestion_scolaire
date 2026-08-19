@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<div class="form-card" style="max-width:700px;">
+<div class="form-card">
     <h3>Ajouter un élève</h3>
 
     <?php if (isset($error)): ?>
