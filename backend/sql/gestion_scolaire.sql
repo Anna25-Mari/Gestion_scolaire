@@ -1,12 +1,12 @@
 -- ========================================
--- Base de données : gestion_scolaire
+-- Base de données : gestion_scolaire_test
 -- ========================================
 
-CREATE DATABASE IF NOT EXISTS gestion_scolaire
+CREATE DATABASE IF NOT EXISTS gestion_scolaire_test
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_general_ci;
 
-USE gestion_scolaire;
+USE gestion_scolaire_test;
 
 -- ========================================
 -- Table : utilisateurs

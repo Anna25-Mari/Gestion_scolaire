@@ -42,6 +42,6 @@ $_SESSION['role'] = $user['role'];
 if ($user['role'] === 'admin') {
     header('Location: /Gestion_scolaire/frontend/admin/dashboard.php');
 } else {
-    header('Location: /Gestion_scolaire/frontend/admin/dashboard.php');
+    header('Location: /Gestion_scolaire/frontend/directeur/dashboard.php');
 }
 exit;
