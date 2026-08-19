@@ -1,11 +1,18 @@
 <?php
 session_start();
 
+function noCache() {
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+}
+
 function requireLogin() {
     if (!isset($_SESSION['user_id'])) {
         header('Location: /Gestion_scolaire/frontend/login.php');
         exit;
     }
+    noCache();
 }
 
 function requireAdmin() {
@@ -14,6 +21,7 @@ function requireAdmin() {
         header('Location: /Gestion_scolaire/frontend/login.php');
         exit;
     }
+    noCache();
 }
 
 function isLoggedIn() {
