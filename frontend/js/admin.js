@@ -1,5 +1,23 @@
 document.addEventListener('DOMContentLoaded', function () {
 
+    var menuToggle = document.getElementById('menuToggle');
+    var sidebar = document.querySelector('.sidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', function () {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        });
+    }
+
+    if (overlay) {
+        overlay.addEventListener('click', function () {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        });
+    }
+
     document.querySelectorAll('[data-confirm]').forEach(function (el) {
         el.addEventListener('click', function (e) {
             var message = el.getAttribute('data-confirm');

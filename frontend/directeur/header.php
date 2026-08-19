@@ -54,9 +54,16 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
         </nav>
     </aside>
 
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <main class="main-content">
         <div class="topbar">
-            <h2><?= $pageTitle ?? 'Tableau de bord' ?></h2>
+            <div style="display:flex;align-items:center;gap:0.8rem;">
+                <button class="menu-toggle" id="menuToggle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <h2><?= $pageTitle ?? 'Tableau de bord' ?></h2>
+            </div>
             <div class="topbar-user">
                 <div class="user-avatar"><?= strtoupper(substr($_SESSION['prenom'], 0, 1)) ?></div>
                 <span><?= htmlspecialchars(getUserName()) ?></span>
