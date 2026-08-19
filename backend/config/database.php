@@ -1,6 +1,6 @@
 <?php
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'gestion_scolaire');
+define('DB_NAME', 'gestion_scolaire_test');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
