@@ -23,6 +23,12 @@ function getConnection() {
                 PDO::ATTR_EMULATE_PREPARES => false
             ]
         );
+
+        $result = $pdo->query("SHOW COLUMNS FROM utilisateurs LIKE 'must_change_password'");
+        if ($result->rowCount() === 0) {
+            $pdo->exec("ALTER TABLE utilisateurs ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 0 AFTER statut");
+        }
+
         return $pdo;
     } catch (PDOException $e) {
         die('Erreur de connexion : ' . $e->getMessage());
