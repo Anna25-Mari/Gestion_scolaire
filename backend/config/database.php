@@ -1,8 +1,15 @@
 <?php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'gestion_scolaire_test');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+if ($_SERVER['SERVER_NAME'] === 'localhost' || $_SERVER['SERVER_NAME'] === '127.0.0.1') {
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'gestion_scolaire_test');
+    define('DB_USER', 'root');
+    define('DB_PASS', '');
+} else {
+    define('DB_HOST', 'sql207.infinityfree.com');
+    define('DB_NAME', 'if0_42695792_gestion');
+    define('DB_USER', 'if0_42695792');
+    define('DB_PASS', 'Joanespe');
+}
 
 function getConnection() {
     try {
