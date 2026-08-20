@@ -5,7 +5,7 @@
  * A appeler une fois au démarrage ou via le navigateur.
  */
 
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/../backend/config/database.php';
 
 try {
     $pdo = getConnection();
