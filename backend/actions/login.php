@@ -2,8 +2,10 @@
 session_start();
 require_once __DIR__ . '/../config/database.php';
 
+$base = rtrim(dirname(dirname(dirname($_SERVER['SCRIPT_NAME']))), '/');
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /Gestion_scolaire/frontend/login.php');
+    header('Location: ' . $base . '/frontend/login.php');
     exit;
 }
 
@@ -12,7 +14,7 @@ $password = $_POST['password'] ?? '';
 
 if (empty($email) || empty($password)) {
     $_SESSION['flash_error'] = 'Veuillez remplir tous les champs.';
-    header('Location: /Gestion_scolaire/frontend/login.php');
+    header('Location: ' . $base . '/frontend/login.php');
     exit;
 }
 
@@ -23,13 +25,13 @@ $user = $stmt->fetch();
 
 if (!$user || !password_verify($password, $user['password'])) {
     $_SESSION['flash_error'] = 'Email ou mot de passe incorrect.';
-    header('Location: /Gestion_scolaire/frontend/login.php');
+    header('Location: ' . $base . '/frontend/login.php');
     exit;
 }
 
 if ($user['statut'] === 'inactif') {
-    $_SESSION['flash_error'] = 'Votre compte est désactivé. Contactez l\'administrateur.';
-    header('Location: /Gestion_scolaire/frontend/login.php');
+    $_SESSION['flash_error'] = 'Votre compte est desactive. Contactez l\'administrateur.';
+    header('Location: ' . $base . '/frontend/login.php');
     exit;
 }
 
@@ -41,15 +43,15 @@ $_SESSION['role'] = $user['role'];
 
 if ($user['must_change_password'] == 1) {
     $_SESSION['must_change_password'] = 1;
-    header('Location: /Gestion_scolaire/frontend/changer-mot-de-passe.php');
+    header('Location: ' . $base . '/frontend/changer-mot-de-passe.php');
     exit;
 }
 
 unset($_SESSION['must_change_password']);
 
 if ($user['role'] === 'admin') {
-    header('Location: /Gestion_scolaire/frontend/admin/dashboard.php');
+    header('Location: ' . $base . '/frontend/admin/dashboard.php');
 } else {
-    header('Location: /Gestion_scolaire/frontend/directeur/dashboard.php');
+    header('Location: ' . $base . '/frontend/directeur/dashboard.php');
 }
 exit;

@@ -3,6 +3,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+function getBasePath() {
+    $docroot = $_SERVER['DOCUMENT_ROOT'];
+    $scriptdir = dirname(dirname(dirname($_DIR__)));
+    return rtrim(str_replace('\\', '/', str_replace($docroot, '', $scriptdir)), '/');
+}
+
 function noCache() {
     header('Cache-Control: no-cache, no-store, must-revalidate');
     header('Pragma: no-cache');
@@ -11,11 +17,11 @@ function noCache() {
 
 function requireLogin() {
     if (!isset($_SESSION['user_id'])) {
-        header('Location: /Gestion_scolaire/frontend/login.php');
+        header('Location: ' . getBasePath() . '/frontend/login.php');
         exit;
     }
     if (isset($_SESSION['must_change_password']) && $_SESSION['must_change_password'] == 1) {
-        header('Location: /Gestion_scolaire/frontend/changer-mot-de-passe.php');
+        header('Location: ' . getBasePath() . '/frontend/changer-mot-de-passe.php');
         exit;
     }
     noCache();
@@ -24,7 +30,7 @@ function requireLogin() {
 function requireAdmin() {
     requireLogin();
     if ($_SESSION['role'] !== 'admin') {
-        header('Location: /Gestion_scolaire/frontend/login.php');
+        header('Location: ' . getBasePath() . '/frontend/login.php');
         exit;
     }
     noCache();
