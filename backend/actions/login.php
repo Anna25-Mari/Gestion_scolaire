@@ -39,6 +39,14 @@ $_SESSION['prenom'] = $user['prenom'];
 $_SESSION['email'] = $user['email'];
 $_SESSION['role'] = $user['role'];
 
+if ($user['must_change_password'] == 1) {
+    $_SESSION['must_change_password'] = 1;
+    header('Location: /Gestion_scolaire/frontend/changer-mot-de-passe.php');
+    exit;
+}
+
+unset($_SESSION['must_change_password']);
+
 if ($user['role'] === 'admin') {
     header('Location: /Gestion_scolaire/frontend/admin/dashboard.php');
 } else {

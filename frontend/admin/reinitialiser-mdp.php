@@ -23,7 +23,7 @@ if (!$compte) {
 $defaultPassword = 'Anna@2024';
 $hashedPassword = password_hash($defaultPassword, PASSWORD_DEFAULT);
 
-$update = $pdo->prepare('UPDATE utilisateurs SET password = ? WHERE id = ?');
+$update = $pdo->prepare('UPDATE utilisateurs SET password = ?, must_change_password = 1 WHERE id = ?');
 $update->execute([$hashedPassword, $id]);
 ?>
 

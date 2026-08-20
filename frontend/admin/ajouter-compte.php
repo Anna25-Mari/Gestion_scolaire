@@ -27,17 +27,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($passwordChoice === 'personnalise' && strlen($customPassword) < 6) {
         $error = 'Le mot de passe doit contenir au moins 6 caractères.';
     } else {
-        $check = $pdo->prepare('SELECT id FROM utilisateurs WHERE email = ?');
-        $check->execute([$email]);
-        if ($check->fetch()) {
-            $error = 'Cet email est déjà utilisé.';
-        } else {
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare('INSERT INTO utilisateurs (nom, prenom, email, password, role, statut) VALUES (?, ?, ?, ?, ?, "actif")');
-            $stmt->execute([$nom, $prenom, $email, $hashedPassword, $role]);
-            $createdPassword = $password;
+            $check = $pdo->prepare('SELECT id FROM utilisateurs WHERE email = ?');
+            $check->execute([$email]);
+            if ($check->fetch()) {
+                $error = 'Cet email est déjà utilisé.';
+            } else {
+                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+                $mustChange = ($passwordChoice === 'defaut') ? 1 : 0;
+                $stmt = $pdo->prepare('INSERT INTO utilisateurs (nom, prenom, email, password, role, statut, must_change_password) VALUES (?, ?, ?, ?, ?, "actif", ?)');
+                $stmt->execute([$nom, $prenom, $email, $hashedPassword, $role, $mustChange]);
+                $createdPassword = $password;
+            }
         }
-    }
 }
 ?>
 

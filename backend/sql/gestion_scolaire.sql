@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS utilisateurs (
     password VARCHAR(255) NOT NULL,
     role ENUM('admin', 'directeur') NOT NULL DEFAULT 'directeur',
     statut ENUM('actif', 'inactif') NOT NULL DEFAULT 'actif',
+    must_change_password TINYINT(1) NOT NULL DEFAULT 0,
     date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 

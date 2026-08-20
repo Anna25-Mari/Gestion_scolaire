@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 function noCache() {
     header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -10,6 +12,10 @@ function noCache() {
 function requireLogin() {
     if (!isset($_SESSION['user_id'])) {
         header('Location: /Gestion_scolaire/frontend/login.php');
+        exit;
+    }
+    if (isset($_SESSION['must_change_password']) && $_SESSION['must_change_password'] == 1) {
+        header('Location: /Gestion_scolaire/frontend/changer-mot-de-passe.php');
         exit;
     }
     noCache();
