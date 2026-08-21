@@ -100,69 +100,89 @@ $derniersEleves = $pdo->query('
     </div>
 </div>
 
-<div class="table-card">
-    <div class="table-header">
-        <h3>Derniers comptes créés</h3>
-        <a href="comptes.php" class="btn btn-primary btn-sm">Voir tout</a>
+<div class="dashboard-grid">
+    <div class="table-card">
+        <div class="table-header">
+            <h3>Derniers comptes créés</h3>
+            <a href="comptes.php" class="btn btn-primary btn-sm">Voir tout</a>
+        </div>
+        <?php if (count($derniersComptes) > 0): ?>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Utilisateur</th>
+                    <th>Rôle</th>
+                    <th>Statut</th>
+                    <th>Créé le</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($derniersComptes as $compte): ?>
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <span class="avatar-sm"><?= htmlspecialchars(mb_substr($compte['prenom'], 0, 1) . mb_substr($compte['nom'], 0, 1)) ?></span>
+                            <div>
+                                <strong><?= htmlspecialchars($compte['prenom'] . ' ' . $compte['nom']) ?></strong><br>
+                                <small style="color:#888;"><?= htmlspecialchars($compte['email']) ?></small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-<?= $compte['role'] ?>"><?= ucfirst($compte['role']) ?></span></td>
+                    <td><span class="badge badge-<?= $compte['statut'] ?>"><?= ucfirst($compte['statut']) ?></span></td>
+                    <td><?= date('d/m/Y', strtotime($compte['date_creation'])) ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php else: ?>
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <p>Aucun compte créé.</p>
+            <a href="ajouter-compte.php" class="btn btn-primary btn-sm">Créer un compte</a>
+        </div>
+        <?php endif; ?>
     </div>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>Email</th>
-                <th>Rôle</th>
-                <th>Statut</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($derniersComptes as $compte): ?>
-            <tr>
-                <td><?= htmlspecialchars($compte['nom']) ?></td>
-                <td><?= htmlspecialchars($compte['prenom']) ?></td>
-                <td><?= htmlspecialchars($compte['email']) ?></td>
-                <td><span class="badge badge-<?= $compte['role'] ?>"><?= ucfirst($compte['role']) ?></span></td>
-                <td><span class="badge badge-<?= $compte['statut'] ?>"><?= ucfirst($compte['statut']) ?></span></td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-</div>
 
-<div class="table-card">
-    <div class="table-header">
-        <h3>Derniers élèves inscrits</h3>
-        <a href="eleves.php" class="btn btn-primary btn-sm">Voir tout</a>
+    <div class="table-card">
+        <div class="table-header">
+            <h3>Derniers élèves inscrits</h3>
+            <a href="eleves.php" class="btn btn-primary btn-sm">Voir tout</a>
+        </div>
+        <?php if (count($derniersEleves) > 0): ?>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Élève</th>
+                    <th>Sexe</th>
+                    <th>Classe</th>
+                    <th>Inscrit le</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($derniersEleves as $eleve): ?>
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <span class="avatar-sm <?= $eleve['sexe'] === 'F' ? 'avatar-green' : '' ?>"><?= htmlspecialchars(mb_substr($eleve['prenom'], 0, 1) . mb_substr($eleve['nom'], 0, 1)) ?></span>
+                            <strong><?= htmlspecialchars($eleve['prenom'] . ' ' . $eleve['nom']) ?></strong>
+                        </div>
+                    </td>
+                    <td><?= $eleve['sexe'] === 'M' ? 'Garçon' : 'Fille' ?></td>
+                    <td><?= $eleve['classe_nom'] ? htmlspecialchars($eleve['classe_nom']) : '<em style="color:#aaa">Non assigné</em>' ?></td>
+                    <td><?= $eleve['date_inscription'] ? date('d/m/Y', strtotime($eleve['date_inscription'])) : '-' ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php else: ?>
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <p>Aucun élève inscrit pour le moment.</p>
+            <a href="importer.php" class="btn btn-primary btn-sm">Importer depuis Excel</a>
+        </div>
+        <?php endif; ?>
     </div>
-    <?php if (count($derniersEleves) > 0): ?>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>Sexe</th>
-                <th>Classe</th>
-                <th>Inscrit le</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($derniersEleves as $eleve): ?>
-            <tr>
-                <td><?= htmlspecialchars($eleve['nom']) ?></td>
-                <td><?= htmlspecialchars($eleve['prenom']) ?></td>
-                <td><?= $eleve['sexe'] === 'M' ? 'Garçon' : 'Fille' ?></td>
-                <td><?= $eleve['classe_nom'] ? htmlspecialchars($eleve['classe_nom']) : '<em style="color:#aaa">Non assigné</em>' ?></td>
-                <td><?= date('d/m/Y', strtotime($eleve['date_inscription'])) ?></td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-    <?php else: ?>
-    <div style="padding:2rem;text-align:center;color:#888;">
-        <p>Aucun élève inscrit pour le moment.</p>
-        <a href="importer.php" class="btn btn-primary btn-sm" style="margin-top:0.8rem;">Importer depuis Excel</a>
-    </div>
-    <?php endif; ?>
 </div>
 
 <?php require_once __DIR__ . '/footer.php'; ?>

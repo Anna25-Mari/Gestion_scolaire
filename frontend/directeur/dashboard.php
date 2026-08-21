@@ -2,6 +2,7 @@
 $pageTitle = 'Tableau de bord';
 require_once __DIR__ . '/header.php';
 require_once __DIR__ . '/../../backend/config/database.php';
+require_once __DIR__ . '/../../backend/includes/functions.php';
 
 $pdo = getConnection();
 
@@ -11,21 +12,92 @@ $totalClasses = $pdo->query('SELECT COUNT(*) FROM classes')->fetchColumn();
 $elevesFilles = $pdo->query("SELECT COUNT(*) FROM eleves WHERE sexe = 'F'")->fetchColumn();
 $elevesGarcons = $pdo->query("SELECT COUNT(*) FROM eleves WHERE sexe = 'M'")->fetchColumn();
 
-$effectifsClasses = $pdo->query('
-    SELECT c.nom, c.niveau, c.capacite, COUNT(e.id) as effectif
-    FROM classes c
-    LEFT JOIN eleves e ON e.classe_id = c.id
-    GROUP BY c.id, c.nom, c.niveau, c.capacite
-    ORDER BY c.nom
-')->fetchAll();
+$perPage = 15;
 
-$derniersEleves = $pdo->query('
-    SELECT e.nom, e.prenom, e.sexe, e.date_inscription, c.nom as classe
-    FROM eleves e
-    LEFT JOIN classes c ON e.classe_id = c.id
-    ORDER BY e.date_inscription DESC
-    LIMIT 5
-')->fetchAll();
+/* ===== Tableau : élèves par salle ===== */
+$q1 = trim($_GET['q1'] ?? '');
+$page1 = paginationPage();
+$where1 = '';
+$args1 = [];
+if ($q1 !== '') {
+    $where1 = 'WHERE c.nom LIKE ? OR cy.nom LIKE ? OR c.niveau LIKE ?';
+    $like1 = "%$q1%";
+    $args1 = [$like1, $like1, $like1];
+}
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM classes c LEFT JOIN cycles cy ON c.cycle_id = cy.id $where1");
+$stmt->execute($args1);
+$totalRows1 = (int)$stmt->fetchColumn();
+$totalPages1 = max(1, ceil($totalRows1 / $perPage));
+$page1 = min($page1, $totalPages1);
+$offset1 = ($page1 - 1) * $perPage;
+
+$stmt = $pdo->prepare("
+    SELECT c.id, c.nom, c.niveau, c.capacite, cy.nom AS cycle_nom, COUNT(e.id) AS effectif
+    FROM classes c
+    LEFT JOIN cycles cy ON c.cycle_id = cy.id
+    LEFT JOIN eleves e ON e.classe_id = c.id
+    $where1
+    GROUP BY c.id, c.nom, c.niveau, c.capacite, cy.nom
+    ORDER BY cy.id ASC, c.id ASC
+    LIMIT $perPage OFFSET $offset1
+");
+$stmt->execute($args1);
+$elevesParSalle = $stmt->fetchAll();
+
+/* ===== Tableau : enseignants par salle ===== */
+$q2 = trim($_GET['q2'] ?? '');
+$page2 = paginationPage(1);
+$pageParam2 = 'ppage';
+if (isset($_GET[$pageParam2])) {
+    $page2 = intval($_GET[$pageParam2]) > 0 ? intval($_GET[$pageParam2]) : 1;
+}
+$where2 = '';
+$args2 = [];
+if ($q2 !== '') {
+    $where2 = 'WHERE c.nom LIKE ? OR cy.nom LIKE ? OR c.niveau LIKE ?';
+    $like2 = "%$q2%";
+    $args2 = [$like2, $like2, $like2];
+}
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM classes c LEFT JOIN cycles cy ON c.cycle_id = cy.id $where2");
+$stmt->execute($args2);
+$totalRows2 = (int)$stmt->fetchColumn();
+$totalPages2 = max(1, ceil($totalRows2 / $perPage));
+$page2 = min($page2, $totalPages2);
+$offset2 = ($page2 - 1) * $perPage;
+
+$stmt = $pdo->prepare("
+    SELECT c.id, c.nom, c.niveau, cy.nom AS cycle_nom,
+           COUNT(DISTINCT ec.enseignant_id) AS nb_enseignants
+    FROM classes c
+    LEFT JOIN cycles cy ON c.cycle_id = cy.id
+    LEFT JOIN enseignants_classes ec ON ec.classe_id = c.id
+    $where2
+    GROUP BY c.id, c.nom, c.niveau, cy.nom
+    ORDER BY cy.id ASC, c.id ASC
+    LIMIT $perPage OFFSET $offset2
+");
+$stmt->execute($args2);
+$enseignantsParSalle = $stmt->fetchAll();
+
+// Noms des enseignants pour les salles affichées
+$ensByClasse = [];
+if (count($enseignantsParSalle) > 0) {
+    $ids = array_column($enseignantsParSalle, 'id');
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmtEns = $pdo->prepare("
+        SELECT ec.classe_id, e.prenom, e.nom
+        FROM enseignants_classes ec
+        JOIN enseignants e ON ec.enseignant_id = e.id
+        WHERE ec.classe_id IN ($placeholders)
+        ORDER BY e.nom ASC, e.prenom ASC
+    ");
+    $stmtEns->execute($ids);
+    foreach ($stmtEns->fetchAll() as $row) {
+        $ensByClasse[$row['classe_id']][] = $row['prenom'] . ' ' . $row['nom'];
+    }
+}
 ?>
 
 <div class="stats-grid">
@@ -39,21 +111,21 @@ $derniersEleves = $pdo->query('
         </div>
     </div>
     <div class="stat-card">
+        <div class="stat-icon orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
+        <div class="stat-info">
+            <h3><?= $totalClasses ?></h3>
+            <p>Salles / Classes</p>
+        </div>
+    </div>
+    <div class="stat-card">
         <div class="stat-icon green">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </div>
         <div class="stat-info">
             <h3><?= $totalEnseignants ?></h3>
             <p>Enseignants</p>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon orange">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-        </div>
-        <div class="stat-info">
-            <h3><?= $totalClasses ?></h3>
-            <p>Classes</p>
         </div>
     </div>
     <div class="stat-card">
@@ -67,32 +139,49 @@ $derniersEleves = $pdo->query('
     </div>
 </div>
 
-<?php if (count($effectifsClasses) > 0): ?>
 <div class="table-card" style="margin-bottom: 2rem;">
     <div class="table-header">
-        <h3>Effectifs par classe</h3>
+        <h3>Nombre d'élèves par salle <span class="count-chip"><?= $totalRows1 ?></span></h3>
+        <form method="GET" action="dashboard.php" style="display:flex;gap:0.5rem;align-items:center;">
+            <input type="hidden" name="q2" value="<?= htmlspecialchars($q2) ?>">
+            <input type="hidden" name="<?= $pageParam2 ?>" value="<?= $page2 ?>">
+            <input type="text" name="q1" placeholder="Rechercher une salle..." class="search-input" style="width:220px;" value="<?= htmlspecialchars($q1) ?>">
+            <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
+            <?php if ($q1): ?>
+                <a href="dashboard.php#ens-salles" class="btn btn-cancel btn-sm">Effacer</a>
+            <?php endif; ?>
+        </form>
     </div>
+    <?php if (count($elevesParSalle) > 0): ?>
+    <?php $lastCycle1 = null; ?>
     <table class="data-table">
         <thead>
             <tr>
-                <th>Classe</th>
+                <th>Salle</th>
                 <th>Niveau</th>
                 <th>Effectif</th>
                 <th>Capacité</th>
                 <th>Occupation</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($effectifsClasses as $classe): ?>
+            <?php foreach ($elevesParSalle as $classe): ?>
+            <?php if ($classe['cycle_nom'] !== $lastCycle1): ?>
+            <tr class="cycle-row">
+                <td colspan="6"><?= htmlspecialchars($classe['cycle_nom'] ?? 'Sans cycle') ?></td>
+            </tr>
+            <?php $lastCycle1 = $classe['cycle_nom']; ?>
+            <?php endif; ?>
             <?php
                 $pct = $classe['capacite'] > 0 ? round(($classe['effectif'] / $classe['capacite']) * 100) : 0;
                 $color = $pct >= 90 ? '#e74c3c' : ($pct >= 70 ? '#f39c12' : '#27ae60');
             ?>
             <tr>
                 <td><strong><?= htmlspecialchars($classe['nom']) ?></strong></td>
-                <td><?= htmlspecialchars($classe['niveau']) ?></td>
-                <td><?= $classe['effectif'] ?></td>
-                <td><?= $classe['capacite'] ?></td>
+                <td><?= $classe['niveau'] ? htmlspecialchars($classe['niveau']) : '-' ?></td>
+                <td><?= $classe['effectif'] ?> élève<?= $classe['effectif'] > 1 ? 's' : '' ?></td>
+                <td><?= $classe['capacite'] ?> places</td>
                 <td>
                     <div style="display:flex;align-items:center;gap:0.5rem;">
                         <div style="flex:1;height:8px;background:#eee;border-radius:4px;overflow:hidden;">
@@ -101,47 +190,75 @@ $derniersEleves = $pdo->query('
                         <span style="font-size:0.8rem;color:<?= $color ?>;font-weight:600;"><?= $pct ?>%</span>
                     </div>
                 </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-</div>
-<?php endif; ?>
-
-<div class="table-card">
-    <div class="table-header">
-        <h3>Derniers élèves inscrits</h3>
-        <a href="eleves.php" class="btn btn-primary btn-sm">Voir tout</a>
-    </div>
-    <?php if (count($derniersEleves) > 0): ?>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>Sexe</th>
-                <th>Classe</th>
-                <th>Inscription</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($derniersEleves as $eleve): ?>
-            <tr>
-                <td><?= htmlspecialchars($eleve['nom']) ?></td>
-                <td><?= htmlspecialchars($eleve['prenom']) ?></td>
-                <td><?= $eleve['sexe'] === 'M' ? 'Garçon' : 'Fille' ?></td>
-                <td><?= $eleve['classe'] ? htmlspecialchars($eleve['classe']) : '<em style="color:#aaa">Non assigné</em>' ?></td>
-                <td><?= date('d/m/Y', strtotime($eleve['date_inscription'])) ?></td>
+                <td><a href="details-classe.php?id=<?= $classe['id'] ?>" class="btn btn-primary btn-sm">Détails</a></td>
             </tr>
             <?php endforeach; ?>
         </tbody>
     </table>
     <?php else: ?>
-    <div style="padding:2rem;text-align:center;color:#888;">
-        <p>Aucun élève inscrit pour le moment.</p>
-        <a href="ajouter-eleve.php" class="btn btn-primary btn-sm" style="margin-top:0.8rem;">Ajouter un élève</a>
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <p>Aucune salle enregistrée.</p>
     </div>
     <?php endif; ?>
+    <?= renderPagination($page1, $totalPages1, array_filter(['q1' => $q1, 'q2' => $q2], function ($v) { return $v !== ''; })) ?>
+</div>
+
+<div class="table-card" id="ens-salles">
+    <div class="table-header">
+        <h3>Nombre d'enseignants par salle <span class="count-chip"><?= $totalRows2 ?></span></h3>
+        <form method="GET" action="dashboard.php" style="display:flex;gap:0.5rem;align-items:center;">
+            <input type="hidden" name="q1" value="<?= htmlspecialchars($q1) ?>">
+            <input type="hidden" name="page" value="<?= $page1 ?>">
+            <input type="text" name="q2" placeholder="Rechercher une salle..." class="search-input" style="width:220px;" value="<?= htmlspecialchars($q2) ?>">
+            <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
+            <?php if ($q2): ?>
+                <a href="dashboard.php" class="btn btn-cancel btn-sm">Effacer</a>
+            <?php endif; ?>
+        </form>
+    </div>
+    <?php if (count($enseignantsParSalle) > 0): ?>
+    <?php $lastCycle2 = null; ?>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Salle</th>
+                <th>Niveau</th>
+                <th>Enseignants</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($enseignantsParSalle as $classe): ?>
+            <?php if ($classe['cycle_nom'] !== $lastCycle2): ?>
+            <tr class="cycle-row">
+                <td colspan="4"><?= htmlspecialchars($classe['cycle_nom'] ?? 'Sans cycle') ?></td>
+            </tr>
+            <?php $lastCycle2 = $classe['cycle_nom']; ?>
+            <?php endif; ?>
+            <tr>
+                <td><strong><?= htmlspecialchars($classe['nom']) ?></strong></td>
+                <td><?= $classe['niveau'] ? htmlspecialchars($classe['niveau']) : '-' ?></td>
+                <td>
+                    <span class="badge badge-admin" style="margin-right:4px;"><?= $classe['nb_enseignants'] ?> enseignant<?= $classe['nb_enseignants'] > 1 ? 's' : '' ?></span>
+                    <?php if (!empty($ensByClasse[$classe['id']])): ?>
+                        <?php foreach ($ensByClasse[$classe['id']] as $nomEns): ?>
+                            <span class="badge badge-directeur" style="margin:1px;"><?= htmlspecialchars($nomEns) ?></span>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </td>
+                <td><a href="details-classe.php?id=<?= $classe['id'] ?>" class="btn btn-primary btn-sm">Détails</a></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php else: ?>
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <p>Aucune salle enregistrée.</p>
+    </div>
+    <?php endif; ?>
+    <?= renderPagination($page2, $totalPages2, array_filter(['q1' => $q1, 'q2' => $q2], function ($v) { return $v !== ''; }), $pageParam2) ?>
 </div>
 
 <?php require_once __DIR__ . '/footer.php'; ?>

@@ -1,6 +1,7 @@
 <?php
 $pageTitle = 'Ajouter un compte';
-require_once __DIR__ . '/header.php';
+require_once __DIR__ . '/../../backend/includes/auth.php';
+requireAdmin();
 require_once __DIR__ . '/../../backend/config/database.php';
 require_once __DIR__ . '/../../backend/includes/password_policy.php';
 require_once __DIR__ . '/../../backend/includes/NotificationService.php';
@@ -40,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare('INSERT INTO utilisateurs (nom, prenom, email, telephone, password, role, statut, must_change_password) VALUES (?, ?, ?, ?, ?, ?, "actif", 1)');
             $stmt->execute([$nom, $prenom, $email, $telephone, $hashedPassword, $role]);
 
-            // Envoi des identifiants directement à l'utilisateur (Gmail prioritaire, SMS en secours)
+            // Envoi des identifiants directement à l'utilisateur par e-mail Gmail
             $results = NotificationService::sendCredentials($email, $telephone, $prenom, $nom, $password, 'cree');
 
             $createdPassword = $password;
@@ -49,10 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <div class="form-card">
     <h3>Créer un nouveau compte</h3>
+    <p class="form-legend">Les identifiants seront envoyés automatiquement à l'utilisateur par e-mail.</p>
 
     <?php if (isset($error)): ?>
         <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
@@ -64,8 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if ($delivered): ?>
         <div style="background:#f0f6fc; border:1px solid #d4e6f1; border-radius:10px; padding:1rem; margin-bottom:1.2rem; font-size:0.88rem;">
             Les identifiants ont été envoyés directement à l'utilisateur par
-            <strong><?= $viaMail ? 'e-mail Gmail à ' . htmlspecialchars($email) : 'SMS au ' . htmlspecialchars($telephone) ?></strong>
-            <?= (!$viaMail && MailService::isConfigured()) ? '' : '' ?>
+            <strong>e-mail Gmail à <?= htmlspecialchars($email) ?></strong>
             <?= ($viaMail && !MailService::isConfigured()) ? '<em>(mode simulation locale — consultez backend/logs/mail.log)</em>' : '' ?>.
         </div>
         <?php else: ?>
@@ -83,48 +86,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     <?php else: ?>
     <form method="POST" action="">
-        <div class="form-group">
-            <label for="nom">Nom</label>
-            <input type="text" id="nom" name="nom" placeholder="Nom de famille" required value="<?= htmlspecialchars($nom ?? '') ?>">
-        </div>
-        <div class="form-group">
-            <label for="prenom">Prénom</label>
-            <input type="text" id="prenom" name="prenom" placeholder="Prénom" required value="<?= htmlspecialchars($prenom ?? '') ?>">
-        </div>
-        <div class="form-group">
-            <label for="email">Adresse e-mail</label>
-            <input type="email" id="email" name="email" placeholder="exemple@anna.com" required value="<?= htmlspecialchars($email ?? '') ?>">
-        </div>
-        <div class="form-group">
-            <label for="telephone">Numéro de téléphone *</label>
-            <input type="tel" id="telephone" name="telephone" placeholder="Ex: 690000000" required value="<?= htmlspecialchars($telephone ?? '') ?>">
-            <small style="color:#888;font-size:0.8rem;">Le mot de passe sera envoyé par SMS à ce numéro.</small>
-        </div>
-        <div class="form-group">
-            <label>Mot de passe</label>
-            <div style="display: flex; gap: 1rem; margin-top: 0.4rem;">
-                <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.9rem; color: #555;">
-                    <input type="radio" name="password_choice" value="defaut" checked onchange="togglePasswordFields()"> Mot par défaut (<?= $defaultPassword ?>)
-                </label>
-                <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.9rem; color: #555;">
-                    <input type="radio" name="password_choice" value="personnalise" onchange="togglePasswordFields()"> Personnaliser
-                </label>
+        <div class="form-section">
+            <div class="form-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Identité de l'utilisateur
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="nom" class="req">Nom</label>
+                    <input type="text" id="nom" name="nom" placeholder="Nom de famille" required value="<?= htmlspecialchars($nom ?? '') ?>">
+                </div>
+                <div class="form-group">
+                    <label for="prenom" class="req">Prénom</label>
+                    <input type="text" id="prenom" name="prenom" placeholder="Prénom" required value="<?= htmlspecialchars($prenom ?? '') ?>">
+                </div>
+                <div class="form-group full">
+                    <label for="email" class="req">Adresse e-mail</label>
+                    <input type="email" id="email" name="email" placeholder="exemple@anna.com" required value="<?= htmlspecialchars($email ?? '') ?>">
+                </div>
+                <div class="form-group full">
+                    <label for="telephone" class="req">Numéro de téléphone</label>
+                    <input type="tel" id="telephone" name="telephone" placeholder="Ex: 690000000" required value="<?= htmlspecialchars($telephone ?? '') ?>">
+                    <small>Numéro de contact de l'utilisateur.</small>
+                </div>
             </div>
         </div>
-        <div class="form-group" id="customPasswordGroup" style="display: none;">
-            <label for="custom_password">Nouveau mot de passe</label>
-            <input type="password" id="custom_password" name="custom_password" placeholder="Minimum 8 caracteres, majuscule, minuscule et chiffre">
-            <small style="color:#888;font-size:0.8rem;">Minimum 8 caractères, avec au moins une majuscule, une minuscule et un chiffre.</small>
-        </div>
-        <div class="form-group">
-            <label for="role">Rôle</label>
-            <select id="role" name="role" required>
-                <option value="directeur" <?= ($role ?? '') === 'directeur' ? 'selected' : '' ?>>Directeur</option>
-                <option value="admin" <?= ($role ?? '') === 'admin' ? 'selected' : '' ?>>Administrateur</option>
-            </select>
+
+        <div class="form-section">
+            <div class="form-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Sécurité &amp; rôle
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <div class="radio-group">
+                    <label class="radio-pill">
+                        <input type="radio" name="password_choice" value="defaut" checked onchange="togglePasswordFields()">
+                        <span>Mot par défaut (<?= $defaultPassword ?>)</span>
+                    </label>
+                    <label class="radio-pill">
+                        <input type="radio" name="password_choice" value="personnalise" onchange="togglePasswordFields()">
+                        <span>Personnaliser</span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-group" id="customPasswordGroup" style="display: none;">
+                <label for="custom_password" class="req">Nouveau mot de passe</label>
+                <input type="password" id="custom_password" name="custom_password" placeholder="Minimum 8 caracteres, majuscule, minuscule et chiffre">
+                <small>Minimum 8 caractères, avec au moins une majuscule, une minuscule et un chiffre.</small>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="role" class="req">Rôle</label>
+                    <select id="role" name="role" required>
+                        <option value="directeur" <?= ($role ?? '') === 'directeur' ? 'selected' : '' ?>>Directeur</option>
+                        <option value="admin" <?= ($role ?? '') === 'admin' ? 'selected' : '' ?>>Administrateur</option>
+                    </select>
+                </div>
+            </div>
         </div>
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Créer le compte et envoyer le SMS</button>
+            <button type="submit" class="btn btn-primary">Créer le compte et envoyer les identifiants</button>
             <a href="comptes.php" class="btn btn-cancel">Annuler</a>
         </div>
     </form>

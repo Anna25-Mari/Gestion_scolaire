@@ -3,6 +3,7 @@ $pageTitle = 'Gestion des élèves';
 require_once __DIR__ . '/../../backend/includes/auth.php';
 requireAdmin();
 require_once __DIR__ . '/../../backend/config/database.php';
+require_once __DIR__ . '/../../backend/includes/functions.php';
 
 $pdo = getConnection();
 
@@ -15,26 +16,51 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     }
 }
 
+$perPage = 10;
+
 $search = trim($_GET['q'] ?? '');
-if ($search) {
-    $stmt = $pdo->prepare('
-        SELECT e.*, c.nom as classe_nom
-        FROM eleves e
-        LEFT JOIN classes c ON e.classe_id = c.id
-        WHERE e.nom LIKE ? OR e.prenom LIKE ? OR e.parent_nom LIKE ?
-        ORDER BY e.nom, e.prenom
-    ');
+$classeFilter = isset($_GET['classe']) && $_GET['classe'] !== '' ? intval($_GET['classe']) : null;
+
+$where = [];
+$args = [];
+if ($search !== '') {
+    $where[] = '(e.nom LIKE ? OR e.prenom LIKE ? OR e.parent_nom LIKE ? OR e.parent_tel LIKE ? OR c.nom LIKE ?)';
     $like = "%$search%";
-    $stmt->execute([$like, $like, $like]);
-} else {
-    $stmt = $pdo->query('
-        SELECT e.*, c.nom as classe_nom
-        FROM eleves e
-        LEFT JOIN classes c ON e.classe_id = c.id
-        ORDER BY e.nom, e.prenom
-    ');
+    $args = array_merge($args, [$like, $like, $like, $like, $like]);
 }
+if ($classeFilter) {
+    $where[] = 'e.classe_id = ?';
+    $args[] = $classeFilter;
+}
+$whereSql = count($where) > 0 ? 'WHERE ' . implode(' AND ', $where) : '';
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM eleves e LEFT JOIN classes c ON e.classe_id = c.id $whereSql");
+$stmt->execute($args);
+$totalRows = (int)$stmt->fetchColumn();
+$totalPages = max(1, ceil($totalRows / $perPage));
+$page = min(paginationPage(), $totalPages);
+$offset = ($page - 1) * $perPage;
+
+$stmt = $pdo->prepare("
+    SELECT e.id, e.nom, e.prenom, e.sexe, e.date_naissance, e.parent_nom, e.parent_tel, c.nom AS classe_nom
+    FROM eleves e
+    LEFT JOIN classes c ON e.classe_id = c.id
+    $whereSql
+    ORDER BY e.id ASC
+    LIMIT $perPage OFFSET $offset
+");
+$stmt->execute($args);
 $eleves = $stmt->fetchAll();
+
+$classes = $pdo->query('SELECT id, nom FROM classes ORDER BY nom')->fetchAll();
+
+$paginationParams = [];
+if ($search !== '') {
+    $paginationParams['q'] = $search;
+}
+if ($classeFilter) {
+    $paginationParams['classe'] = $classeFilter;
+}
 
 require_once __DIR__ . '/header.php';
 ?>
@@ -55,17 +81,26 @@ require_once __DIR__ . '/header.php';
 
 <div class="table-card">
     <div class="table-header">
-        <form method="GET" action="eleves.php" style="display:flex;gap:0.5rem;align-items:center;">
-            <input type="text" name="q" placeholder="Rechercher un élève..." value="<?= htmlspecialchars($search) ?>" style="padding:0.5rem 0.8rem;border:2px solid #e0e0e0;border-radius:8px;font-size:0.85rem;outline:none;width:250px;">
-            <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
-            <?php if ($search): ?>
-                <a href="eleves.php" class="btn btn-cancel btn-sm">Effacer</a>
-            <?php endif; ?>
-        </form>
-        <a href="ajouter-eleve.php" class="btn btn-primary btn-sm">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Ajouter
-        </a>
+        <h3>Liste des élèves <span class="count-chip"><?= $totalRows ?></span></h3>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+            <form method="GET" action="eleves.php" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                <input type="text" name="q" placeholder="Rechercher un élève..." class="search-input" style="width:190px;" value="<?= htmlspecialchars($search) ?>">
+                <select name="classe" class="select-filter" onchange="this.form.submit()">
+                    <option value="">Toutes les salles</option>
+                    <?php foreach ($classes as $c): ?>
+                        <option value="<?= $c['id'] ?>" <?= $classeFilter === (int)$c['id'] ? 'selected' : '' ?>><?= htmlspecialchars($c['nom']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
+                <?php if ($search || $classeFilter): ?>
+                    <a href="eleves.php" class="btn btn-cancel btn-sm">Effacer</a>
+                <?php endif; ?>
+            </form>
+            <a href="ajouter-eleve.php" class="btn btn-primary btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Ajouter
+            </a>
+        </div>
     </div>
     <?php if (count($eleves) > 0): ?>
     <table class="data-table">
@@ -106,13 +141,15 @@ require_once __DIR__ . '/header.php';
         </tbody>
     </table>
     <?php else: ?>
-    <div style="padding:2rem;text-align:center;color:#888;">
-        <p><?= $search ? 'Aucun élève trouvé pour "'.$search.'"' : 'Aucun élève inscrit.' ?></p>
-        <?php if (!$search): ?>
-            <a href="ajouter-eleve.php" class="btn btn-primary btn-sm" style="margin-top:0.8rem;">Ajouter un élève</a>
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <p><?= $search || $classeFilter ? 'Aucun élève trouvé.' : 'Aucun élève inscrit.' ?></p>
+        <?php if (!$search && !$classeFilter): ?>
+            <a href="ajouter-eleve.php" class="btn btn-primary btn-sm">Ajouter un élève</a>
         <?php endif; ?>
     </div>
     <?php endif; ?>
+    <?= renderPagination($page, $totalPages, $paginationParams) ?>
 </div>
 
 <?php require_once __DIR__ . '/footer.php'; ?>

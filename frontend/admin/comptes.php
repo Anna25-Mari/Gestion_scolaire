@@ -1,7 +1,9 @@
 <?php
 $pageTitle = 'Gestion des comptes';
-require_once __DIR__ . '/header.php';
+require_once __DIR__ . '/../../backend/includes/auth.php';
+requireAdmin();
 require_once __DIR__ . '/../../backend/config/database.php';
+require_once __DIR__ . '/../../backend/includes/functions.php';
 
 $pdo = getConnection();
 
@@ -31,7 +33,49 @@ if (isset($_GET['action'])) {
     }
 }
 
-$comptes = $pdo->query('SELECT * FROM utilisateurs ORDER BY date_creation DESC')->fetchAll();
+$perPage = 15;
+
+$search = trim($_GET['q'] ?? '');
+$roleFilter = in_array($_GET['role'] ?? '', ['admin', 'directeur'], true) ? $_GET['role'] : null;
+
+$where = [];
+$args = [];
+if ($search !== '') {
+    $where[] = '(nom LIKE ? OR prenom LIKE ? OR email LIKE ? OR telephone LIKE ?)';
+    $like = "%$search%";
+    $args = array_merge($args, [$like, $like, $like, $like]);
+}
+if ($roleFilter) {
+    $where[] = 'role = ?';
+    $args[] = $roleFilter;
+}
+$whereSql = count($where) > 0 ? 'WHERE ' . implode(' AND ', $where) : '';
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM utilisateurs $whereSql");
+$stmt->execute($args);
+$totalRows = (int)$stmt->fetchColumn();
+$totalPages = max(1, ceil($totalRows / $perPage));
+$page = min(paginationPage(), $totalPages);
+$offset = ($page - 1) * $perPage;
+
+$stmt = $pdo->prepare("
+    SELECT * FROM utilisateurs
+    $whereSql
+    ORDER BY id ASC
+    LIMIT $perPage OFFSET $offset
+");
+$stmt->execute($args);
+$comptes = $stmt->fetchAll();
+
+$paginationParams = [];
+if ($search !== '') {
+    $paginationParams['q'] = $search;
+}
+if ($roleFilter) {
+    $paginationParams['role'] = $roleFilter;
+}
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <?php if (isset($_GET['msg'])): ?>
@@ -53,11 +97,25 @@ $comptes = $pdo->query('SELECT * FROM utilisateurs ORDER BY date_creation DESC')
 
 <div class="table-card">
     <div class="table-header">
-        <h3>Tous les comptes (<?= count($comptes) ?>)</h3>
-        <a href="ajouter-compte.php" class="btn btn-primary btn-sm">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Ajouter
-        </a>
+        <h3>Tous les comptes <span class="count-chip"><?= $totalRows ?></span></h3>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+            <form method="GET" action="comptes.php" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                <input type="text" name="q" placeholder="Rechercher un compte..." class="search-input" style="width:190px;" value="<?= htmlspecialchars($search) ?>">
+                <select name="role" class="select-filter" onchange="this.form.submit()">
+                    <option value="">Tous les rôles</option>
+                    <option value="admin" <?= $roleFilter === 'admin' ? 'selected' : '' ?>>Administrateurs</option>
+                    <option value="directeur" <?= $roleFilter === 'directeur' ? 'selected' : '' ?>>Directeurs</option>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
+                <?php if ($search || $roleFilter): ?>
+                    <a href="comptes.php" class="btn btn-cancel btn-sm">Effacer</a>
+                <?php endif; ?>
+            </form>
+            <a href="ajouter-compte.php" class="btn btn-primary btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Ajouter
+            </a>
+        </div>
     </div>
     <table class="data-table">
         <thead>
@@ -87,7 +145,7 @@ $comptes = $pdo->query('SELECT * FROM utilisateurs ORDER BY date_creation DESC')
                         <a href="modifier-compte.php?id=<?= $compte['id'] ?>" class="btn btn-primary btn-sm" title="Modifier">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </a>
-                        <a href="reinitialiser-mdp.php?id=<?= $compte['id'] ?>" class="btn btn-warning btn-sm" title="Réinitialiser MDP" data-confirm="Réinitialiser le mot de passe de ce compte ? Un nouveau mot de passe sera envoyé directement à l'utilisateur par e-mail (ou SMS).">
+                        <a href="reinitialiser-mdp.php?id=<?= $compte['id'] ?>" class="btn btn-warning btn-sm" title="Réinitialiser MDP" data-confirm="Réinitialiser le mot de passe de ce compte ? Un nouveau mot de passe sera envoyé directement à l'utilisateur par e-mail.">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         </a>
                         <?php if ($compte['id'] != $_SESSION['user_id']): ?>
@@ -110,6 +168,7 @@ $comptes = $pdo->query('SELECT * FROM utilisateurs ORDER BY date_creation DESC')
             <?php endforeach; ?>
         </tbody>
     </table>
+    <?= renderPagination($page, $totalPages, $paginationParams) ?>
 </div>
 
 <?php require_once __DIR__ . '/footer.php'; ?>

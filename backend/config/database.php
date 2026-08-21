@@ -87,8 +87,22 @@ function ensureSchema($pdo) {
         email VARCHAR(150) DEFAULT NULL,
         telephone VARCHAR(20) DEFAULT NULL,
         specialite VARCHAR(100) DEFAULT NULL,
+        dernier_diplome VARCHAR(150) DEFAULT NULL,
+        statut ENUM('actif', 'suspendu') NOT NULL DEFAULT 'actif',
+        date_suspension DATETIME DEFAULT NULL,
         date_embauche DATE DEFAULT NULL
     ) ENGINE=InnoDB");
+
+    // Colonnes diplôme / statut / suspension (migration historique)
+    if (!columnExists($pdo, 'enseignants', 'dernier_diplome')) {
+        $pdo->exec("ALTER TABLE enseignants ADD COLUMN dernier_diplome VARCHAR(150) DEFAULT NULL AFTER specialite");
+    }
+    if (!columnExists($pdo, 'enseignants', 'statut')) {
+        $pdo->exec("ALTER TABLE enseignants ADD COLUMN statut ENUM('actif', 'suspendu') NOT NULL DEFAULT 'actif' AFTER dernier_diplome");
+    }
+    if (!columnExists($pdo, 'enseignants', 'date_suspension')) {
+        $pdo->exec("ALTER TABLE enseignants ADD COLUMN date_suspension DATETIME DEFAULT NULL AFTER statut");
+    }
 
     // Table de liaison enseignants <-> classes
     $pdo->exec("CREATE TABLE IF NOT EXISTS enseignants_classes (

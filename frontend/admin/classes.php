@@ -3,6 +3,7 @@ $pageTitle = 'Gestion des classes';
 require_once __DIR__ . '/../../backend/includes/auth.php';
 requireAdmin();
 require_once __DIR__ . '/../../backend/config/database.php';
+require_once __DIR__ . '/../../backend/includes/functions.php';
 
 $pdo = getConnection();
 
@@ -20,14 +21,53 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     }
 }
 
-$classes = $pdo->query('
-    SELECT c.*, cy.nom as cycle_nom, COUNT(e.id) as effectif
+$perPage = 15;
+
+$search = trim($_GET['q'] ?? '');
+$cycleFilter = isset($_GET['cycle']) && $_GET['cycle'] !== '' ? intval($_GET['cycle']) : null;
+
+$where = [];
+$args = [];
+if ($search !== '') {
+    $where[] = '(c.nom LIKE ? OR c.description LIKE ? OR cy.nom LIKE ?)';
+    $like = "%$search%";
+    $args = array_merge($args, [$like, $like, $like]);
+}
+if ($cycleFilter) {
+    $where[] = 'c.cycle_id = ?';
+    $args[] = $cycleFilter;
+}
+$whereSql = count($where) > 0 ? 'WHERE ' . implode(' AND ', $where) : '';
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM classes c LEFT JOIN cycles cy ON c.cycle_id = cy.id $whereSql");
+$stmt->execute($args);
+$totalRows = (int)$stmt->fetchColumn();
+$totalPages = max(1, ceil($totalRows / $perPage));
+$page = min(paginationPage(), $totalPages);
+$offset = ($page - 1) * $perPage;
+
+$stmt = $pdo->prepare("
+    SELECT c.id, c.nom, c.capacite, c.description, cy.nom AS cycle_nom, COUNT(e.id) AS effectif
     FROM classes c
     LEFT JOIN cycles cy ON c.cycle_id = cy.id
     LEFT JOIN eleves e ON e.classe_id = c.id
+    $whereSql
     GROUP BY c.id
-    ORDER BY c.nom
-')->fetchAll();
+    ORDER BY c.id ASC
+    LIMIT $perPage OFFSET $offset
+");
+$stmt->execute($args);
+$classes = $stmt->fetchAll();
+
+$cycles = $pdo->query('SELECT id, nom FROM cycles ORDER BY nom')->fetchAll();
+
+$paginationParams = [];
+if ($search !== '') {
+    $paginationParams['q'] = $search;
+}
+if ($cycleFilter) {
+    $paginationParams['cycle'] = $cycleFilter;
+}
 
 require_once __DIR__ . '/header.php';
 ?>
@@ -48,11 +88,26 @@ require_once __DIR__ . '/header.php';
 
 <div class="table-card">
     <div class="table-header">
-        <h3>Toutes les classes (<?= count($classes) ?>)</h3>
-        <a href="ajouter-classe.php" class="btn btn-primary btn-sm">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Ajouter
-        </a>
+        <h3>Toutes les classes <span class="count-chip"><?= $totalRows ?></span></h3>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+            <form method="GET" action="classes.php" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                <input type="text" name="q" placeholder="Rechercher une classe..." class="search-input" style="width:190px;" value="<?= htmlspecialchars($search) ?>">
+                <select name="cycle" class="select-filter" onchange="this.form.submit()">
+                    <option value="">Tous les cycles</option>
+                    <?php foreach ($cycles as $cy): ?>
+                        <option value="<?= $cy['id'] ?>" <?= $cycleFilter === (int)$cy['id'] ? 'selected' : '' ?>><?= htmlspecialchars($cy['nom']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
+                <?php if ($search || $cycleFilter): ?>
+                    <a href="classes.php" class="btn btn-cancel btn-sm">Effacer</a>
+                <?php endif; ?>
+            </form>
+            <a href="ajouter-classe.php" class="btn btn-primary btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Ajouter
+            </a>
+        </div>
     </div>
     <?php if (count($classes) > 0): ?>
     <table class="data-table">
@@ -62,8 +117,6 @@ require_once __DIR__ . '/header.php';
                 <th>Nom</th>
                 <th>Cycle</th>
                 <th>Effectif</th>
-                <th>Capacité</th>
-                <th>Description</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -73,8 +126,7 @@ require_once __DIR__ . '/header.php';
                 <td><?= $classe['id'] ?></td>
                 <td><strong><?= htmlspecialchars($classe['nom']) ?></strong></td>
                 <td><?= $classe['cycle_nom'] ? htmlspecialchars($classe['cycle_nom']) : '<em style="color:#aaa">Aucun</em>' ?></td>
-                <td><?= $classe['effectif'] ?> / <?= $classe['capacite'] ?></td>
-                <td><?= $classe['description'] ? htmlspecialchars(substr($classe['description'], 0, 50)) . '...' : '-' ?></td>
+                <td><?= $classe['effectif'] ?></td>
                 <td>
                     <div class="actions-cell">
                         <a href="modifier-classe.php?id=<?= $classe['id'] ?>" class="btn btn-primary btn-sm" title="Modifier">
@@ -90,11 +142,15 @@ require_once __DIR__ . '/header.php';
         </tbody>
     </table>
     <?php else: ?>
-    <div style="padding:2rem;text-align:center;color:#888;">
-        <p>Aucune classe créée.</p>
-        <a href="ajouter-classe.php" class="btn btn-primary btn-sm" style="margin-top:0.8rem;">Créer une classe</a>
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <p><?= $search || $cycleFilter ? 'Aucune classe trouvée.' : 'Aucune classe créée.' ?></p>
+        <?php if (!$search && !$cycleFilter): ?>
+            <a href="ajouter-classe.php" class="btn btn-primary btn-sm">Créer une classe</a>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
+    <?= renderPagination($page, $totalPages, $paginationParams) ?>
 </div>
 
 <?php require_once __DIR__ . '/footer.php'; ?>

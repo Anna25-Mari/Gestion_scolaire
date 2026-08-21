@@ -14,6 +14,8 @@ class MailService
     const SMTP_HOST = 'tcp://smtp.gmail.com';
     const SMTP_PORT = 587;
 
+    private static $lastCmd = '';
+
     public static function isConfigured()
     {
         return MAIL_ADDRESS !== '' && MAIL_PASSWORD !== '';
@@ -82,11 +84,11 @@ class MailService
             throw new Exception('Les sockets PHP ne sont pas disponibles sur ce serveur.');
         }
 
-        $fp = @stream_socket_client(self::SMTP_HOST . ':' . self::SMTP_PORT, $errno, $errstr, 15);
+        $fp = @stream_socket_client(self::SMTP_HOST . ':' . self::SMTP_PORT, $errno, $errstr, 20);
         if (!$fp) {
             throw new Exception("Connexion au serveur SMTP impossible ($errstr)");
         }
-        stream_set_timeout($fp, 15);
+        stream_set_timeout($fp, 30);
 
         try {
             self::expect($fp, 220);
@@ -115,7 +117,7 @@ class MailService
 
             $body = chunk_split(base64_encode($htmlBody));
 
-            fwrite($fp, $headers . "\r\n" . $body . "\r\n.");
+            fwrite($fp, $headers . "\r\n" . $body . "\r\n.\r\n");
             self::expect($fp, 250);
             fwrite($fp, "QUIT\r\n");
         } finally {
@@ -125,6 +127,7 @@ class MailService
 
     private static function command($fp, $line, $expectedCode)
     {
+        self::$lastCmd = $line;
         fwrite($fp, $line . "\r\n");
         self::expect($fp, $expectedCode);
     }
@@ -134,14 +137,24 @@ class MailService
         $response = self::readResponse($fp);
         $received = (int)substr($response, 0, 3);
         if ($received !== $code) {
-            throw new Exception('SMTP (' . $code . ' attendu, ' . $received . ' reçu) : ' . trim($response));
+            throw new Exception('SMTP apres "' . self::$lastCmd . '" (' . $code . ' attendu, ' . $received . ' recu) : ' . trim($response));
         }
     }
 
     private static function readResponse($fp)
     {
         $data = '';
-        while (($line = fgets($fp, 515)) !== false) {
+        $deadline = microtime(true) + 30;
+        while (microtime(true) < $deadline) {
+            stream_set_timeout($fp, 10);
+            $line = fgets($fp, 515);
+            if ($line === false) {
+                $meta = stream_get_meta_data($fp);
+                if ($meta['eof']) {
+                    break; // connexion fermee par le serveur
+                }
+                continue; // reponse lente : on continue d'attendre
+            }
             $data .= $line;
             // Fin de réponse multi-lignes : 4e caractère différent de '-'
             if (!isset($line[3]) || $line[3] !== '-') {

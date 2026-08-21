@@ -35,39 +35,48 @@ require_once __DIR__ . '/header.php';
 
 <div class="form-card">
     <h3>Ajouter une classe</h3>
+    <p class="form-legend">La salle sera visible dans le cycle sélectionné avec son effectif et sa capacité.</p>
 
     <?php if (isset($error)): ?>
         <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
 
     <form method="POST" action="">
-        <div class="form-group">
-            <label for="nom">Nom de la classe *</label>
-            <input type="text" id="nom" name="nom" placeholder="Ex: 6ème A" required value="<?= htmlspecialchars($nom ?? '') ?>">
-        </div>
-        <div class="form-group">
-            <label for="cycle_id">Cycle</label>
-            <select id="cycle_id" name="cycle_id">
-                <option value="">-- Aucun cycle --</option>
-                <?php foreach ($cycles as $cy): ?>
-                    <option value="<?= $cy['id'] ?>" <?= ($cycle_id ?? '') == $cy['id'] ? 'selected' : '' ?>><?= htmlspecialchars($cy['nom']) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="niveau">Niveau</label>
-            <input type="text" id="niveau" name="niveau" placeholder="Ex: 6ème, CM2..." value="<?= htmlspecialchars($niveau ?? '') ?>">
-        </div>
-        <div class="form-group">
-            <label for="description">Description</label>
-            <input type="text" id="description" name="description" placeholder="Optionnel" value="<?= htmlspecialchars($description ?? '') ?>">
-        </div>
-        <div class="form-group">
-            <label for="capacite">Capacité maximale</label>
-            <input type="number" id="capacite" name="capacite" min="1" max="200" value="<?= $capacite ?? 40 ?>">
+        <div class="form-section">
+            <div class="form-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                Identification
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="nom" class="req">Nom de la classe</label>
+                    <input type="text" id="nom" name="nom" placeholder="Ex: 6ème A" required value="<?= htmlspecialchars($nom ?? '') ?>">
+                </div>
+                <div class="form-group">
+                    <label for="cycle_id">Cycle</label>
+                    <select id="cycle_id" name="cycle_id">
+                        <option value="">-- Aucun cycle --</option>
+                        <?php foreach ($cycles as $cy): ?>
+                            <option value="<?= $cy['id'] ?>" <?= ($cycle_id ?? '') == $cy['id'] ? 'selected' : '' ?>><?= htmlspecialchars($cy['nom']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="niveau">Niveau</label>
+                    <input type="text" id="niveau" name="niveau" placeholder="Ex: 6ème, CM2..." value="<?= htmlspecialchars($niveau ?? '') ?>">
+                </div>
+                <div class="form-group">
+                    <label for="capacite">Capacité maximale</label>
+                    <input type="number" id="capacite" name="capacite" min="1" max="200" value="<?= $capacite ?? 40 ?>">
+                </div>
+                <div class="form-group full">
+                    <label for="description">Description</label>
+                    <input type="text" id="description" name="description" placeholder="Optionnel" value="<?= htmlspecialchars($description ?? '') ?>">
+                </div>
+            </div>
         </div>
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Ajouter</button>
+            <button type="submit" class="btn btn-primary">Ajouter la classe</button>
             <a href="classes.php" class="btn btn-cancel">Annuler</a>
         </div>
     </form>

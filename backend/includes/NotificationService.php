@@ -1,38 +1,30 @@
 <?php
 require_once __DIR__ . '/MailService.php';
-require_once __DIR__ . '/SmsService.php';
 
 /**
- * Envoi des identifiants à un utilisateur.
- * Canal prioritaire : Gmail. SMS en secours si l'e-mail échoue
- * ou si l'utilisateur n'a pas d'adresse e-mail.
+ * Envoi des identifiants à un utilisateur par e-mail (Gmail).
  */
 class NotificationService
 {
     /**
-     * Retourne ['mail' => resultat|null, 'sms' => resultat|null]
-     * Succès global : au moins un canal a abouti.
+     * Retourne ['mail' => resultat|null, 'sms' => null]
+     * Succès global : l'e-mail a abouti.
      */
     public static function sendCredentials($email, $telephone, $prenom, $nom, $password, $context = 'cree')
     {
         $results = ['mail' => null, 'sms' => null];
 
-        $messageText = self::buildMessage($prenom, $nom, $email, $password, $context);
+        if ($email === '') {
+            return $results;
+        }
+
         $html = self::buildHtml($prenom, $nom, $email, $password, $context);
 
-        // 1. Gmail (prioritaire)
-        if ($email !== '') {
-            $results['mail'] = MailService::send(
-                $email,
-                'Vos identifiants - Complexe Scolaire ANNA',
-                $html
-            );
-        }
-
-        // 2. SMS en secours
-        if (($results['mail'] === null || !$results['mail']['success']) && trim((string)$telephone) !== '') {
-            $results['sms'] = SmsService::send($telephone, $messageText);
-        }
+        $results['mail'] = MailService::send(
+            $email,
+            'Vos identifiants - Complexe Scolaire ANNA',
+            $html
+        );
 
         return $results;
     }

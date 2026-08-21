@@ -80,6 +80,9 @@ CREATE TABLE IF NOT EXISTS enseignants (
     email VARCHAR(150) DEFAULT NULL,
     telephone VARCHAR(20) DEFAULT NULL,
     specialite VARCHAR(100) DEFAULT NULL,
+    dernier_diplome VARCHAR(150) DEFAULT NULL,
+    statut ENUM('actif', 'suspendu') NOT NULL DEFAULT 'actif',
+    date_suspension DATETIME DEFAULT NULL,
     date_embauche DATE DEFAULT NULL
 ) ENGINE=InnoDB;
 

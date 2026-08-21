@@ -51,34 +51,52 @@ require_once __DIR__ . '/header.php';
 
 <div class="form-card">
     <h3>Modifier le compte de <?= htmlspecialchars($compte['prenom'] . ' ' . $compte['nom']) ?></h3>
+    <p class="form-legend">Modifiez les informations du compte puis enregistrez.</p>
 
     <?php if (isset($error)): ?>
         <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
 
     <form method="POST" action="">
-        <div class="form-group">
-            <label for="nom">Nom</label>
-            <input type="text" id="nom" name="nom" required value="<?= htmlspecialchars($_POST['nom'] ?? $compte['nom']) ?>">
+        <div class="form-section">
+            <div class="form-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Identité de l'utilisateur
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="nom" class="req">Nom</label>
+                    <input type="text" id="nom" name="nom" required value="<?= htmlspecialchars($_POST['nom'] ?? $compte['nom']) ?>">
+                </div>
+                <div class="form-group">
+                    <label for="prenom" class="req">Prénom</label>
+                    <input type="text" id="prenom" name="prenom" required value="<?= htmlspecialchars($_POST['prenom'] ?? $compte['prenom']) ?>">
+                </div>
+                <div class="form-group full">
+                    <label for="email" class="req">Adresse e-mail</label>
+                    <input type="email" id="email" name="email" required value="<?= htmlspecialchars($_POST['email'] ?? $compte['email']) ?>">
+                </div>
+                <div class="form-group full">
+                    <label for="telephone">Numéro de téléphone</label>
+                    <input type="tel" id="telephone" name="telephone" placeholder="Ex: 690000000" value="<?= htmlspecialchars($_POST['telephone'] ?? $compte['telephone']) ?>">
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="prenom">Prénom</label>
-            <input type="text" id="prenom" name="prenom" required value="<?= htmlspecialchars($_POST['prenom'] ?? $compte['prenom']) ?>">
-        </div>
-        <div class="form-group">
-            <label for="email">Adresse e-mail</label>
-            <input type="email" id="email" name="email" required value="<?= htmlspecialchars($_POST['email'] ?? $compte['email']) ?>">
-        </div>
-        <div class="form-group">
-            <label for="telephone">Numéro de téléphone</label>
-            <input type="tel" id="telephone" name="telephone" placeholder="Ex: 690000000" value="<?= htmlspecialchars($_POST['telephone'] ?? $compte['telephone']) ?>">
-        </div>
-        <div class="form-group">
-            <label for="role">Rôle</label>
-            <select id="role" name="role" required>
-                <option value="directeur" <?= ($compte['role'] === 'directeur') ? 'selected' : '' ?>>Directeur</option>
-                <option value="admin" <?= ($compte['role'] === 'admin') ? 'selected' : '' ?>>Administrateur</option>
-            </select>
+
+        <div class="form-section">
+            <div class="form-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Rôle
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="role" class="req">Rôle</label>
+                    <select id="role" name="role" required>
+                        <option value="directeur" <?= ($compte['role'] === 'directeur') ? 'selected' : '' ?>>Directeur</option>
+                        <option value="admin" <?= ($compte['role'] === 'admin') ? 'selected' : '' ?>>Administrateur</option>
+                    </select>
+                </div>
+            </div>
         </div>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Enregistrer</button>

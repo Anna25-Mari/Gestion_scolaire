@@ -1,7 +1,6 @@
 <?php
 $pageTitle = 'Gestion des cycles';
-require_once __DIR__ . '/../../backend/includes/auth.php';
-requireAdmin();
+require_once __DIR__ . '/header.php';
 require_once __DIR__ . '/../../backend/config/database.php';
 require_once __DIR__ . '/../../backend/includes/functions.php';
 
@@ -19,13 +18,12 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
 $perPage = 15;
 
 $search = trim($_GET['q'] ?? '');
-
 $where = [];
 $args = [];
 if ($search !== '') {
     $where[] = '(cy.nom LIKE ? OR cy.code LIKE ? OR cy.description LIKE ?)';
     $like = "%$search%";
-    $args = array_merge($args, [$like, $like, $like]);
+    array_push($args, $like, $like, $like);
 }
 $whereSql = count($where) > 0 ? 'WHERE ' . implode(' AND ', $where) : '';
 
@@ -37,23 +35,16 @@ $page = min(paginationPage(), $totalPages);
 $offset = ($page - 1) * $perPage;
 
 $stmt = $pdo->prepare("
-    SELECT cy.*, COUNT(c.id) as nb_classes
+    SELECT cy.*, COUNT(c.id) AS nb_classes
     FROM cycles cy
     LEFT JOIN classes c ON c.cycle_id = cy.id
     $whereSql
-    GROUP BY cy.id
+    GROUP BY cy.id, cy.nom, cy.code, cy.description, cy.date_creation
     ORDER BY cy.id ASC
     LIMIT $perPage OFFSET $offset
 ");
 $stmt->execute($args);
 $cycles = $stmt->fetchAll();
-
-$paginationParams = [];
-if ($search !== '') {
-    $paginationParams['q'] = $search;
-}
-
-require_once __DIR__ . '/header.php';
 ?>
 
 <?php if (isset($_GET['msg'])): ?>
@@ -63,17 +54,16 @@ require_once __DIR__ . '/header.php';
         'modifier' => 'Cycle modifié avec succès.',
         'supprimer' => 'Cycle supprimé avec succès.'
     ];
-    $msg = $_GET['msg'];
     ?>
-    <?php if (isset($messages[$msg])): ?>
-        <div class="alert alert-success"><?= $messages[$msg] ?></div>
+    <?php if (isset($messages[$_GET['msg']])): ?>
+        <div class="alert alert-success"><?= $messages[$_GET['msg']] ?></div>
     <?php endif; ?>
 <?php endif; ?>
 
 <div class="table-card">
     <div class="table-header">
-        <h3>Tous les cycles <span class="count-chip"><?= $totalRows ?></span></h3>
-        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+        <h3>Cycles <span class="count-chip"><?= $totalRows ?></span></h3>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
             <form method="GET" action="cycles.php" style="display:flex;gap:0.5rem;align-items:center;">
                 <input type="text" name="q" placeholder="Rechercher un cycle..." class="search-input" value="<?= htmlspecialchars($search) ?>">
                 <button type="submit" class="btn btn-primary btn-sm">Rechercher</button>
@@ -94,7 +84,7 @@ require_once __DIR__ . '/header.php';
                 <th>#</th>
                 <th>Nom</th>
                 <th>Code</th>
-                <th>Classes</th>
+                <th>Salles / Classes</th>
                 <th>Description</th>
                 <th>Actions</th>
             </tr>
@@ -104,15 +94,15 @@ require_once __DIR__ . '/header.php';
             <tr>
                 <td><?= $cycle['id'] ?></td>
                 <td><strong><?= htmlspecialchars($cycle['nom']) ?></strong></td>
-                <td><?= $cycle['code'] ? htmlspecialchars($cycle['code']) : '-' ?></td>
-                <td><span class="badge badge-admin"><?= $cycle['nb_classes'] ?></span></td>
-                <td><?= $cycle['description'] ? htmlspecialchars(substr($cycle['description'], 0, 60)) : '-' ?></td>
+                <td><?= $cycle['code'] ? '<span class="badge badge-admin">' . htmlspecialchars($cycle['code']) . '</span>' : '-' ?></td>
+                <td><span class="badge badge-directeur"><?= $cycle['nb_classes'] ?></span></td>
+                <td><?= $cycle['description'] ? htmlspecialchars(mb_substr($cycle['description'], 0, 60)) . (mb_strlen($cycle['description']) > 60 ? '...' : '') : '-' ?></td>
                 <td>
                     <div class="actions-cell">
-                        <a href="modifier-cycle.php?id=<?= $cycle['id'] ?>" class="btn btn-primary btn-sm" title="Modifier">
+                        <a href="modifier-cycle.php?id=<?= $cycle['id'] ?>" class="btn btn-warning btn-sm" title="Modifier">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </a>
-                        <a href="?action=supprimer&id=<?= $cycle['id'] ?>" class="btn btn-danger btn-sm" title="Supprimer" data-confirm="Supprimer ce cycle ? Les classes associées ne seront pas supprimées.">
+                        <a href="?action=supprimer&id=<?= $cycle['id'] ?>" class="btn btn-danger btn-sm" title="Supprimer" data-confirm="Supprimer ce cycle ? Les salles associées ne seront pas supprimées.">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         </a>
                     </div>
@@ -123,14 +113,14 @@ require_once __DIR__ . '/header.php';
     </table>
     <?php else: ?>
     <div class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"/></svg>
         <p><?= $search ? 'Aucun cycle trouvé pour "' . htmlspecialchars($search) . '"' : 'Aucun cycle enregistré.' ?></p>
         <?php if (!$search): ?>
             <a href="ajouter-cycle.php" class="btn btn-primary btn-sm">Créer un cycle</a>
         <?php endif; ?>
     </div>
     <?php endif; ?>
-    <?= renderPagination($page, $totalPages, $paginationParams) ?>
+    <?= renderPagination($page, $totalPages, $search !== '' ? ['q' => $search] : []) ?>
 </div>
 
 <?php require_once __DIR__ . '/footer.php'; ?>

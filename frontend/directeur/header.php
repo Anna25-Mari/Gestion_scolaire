@@ -30,21 +30,21 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                 Tableau de bord
             </a>
-            <a href="classes.php" class="<?= in_array($currentPage, ['classes','ajouter-classe','modifier-classe']) ? 'active' : '' ?>">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                Gestion des classes
+            <a href="cycles.php" class="<?= in_array($currentPage, ['cycles', 'ajouter-cycle', 'modifier-cycle']) ? 'active' : '' ?>">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"/></svg>
+                Cycles
             </a>
-            <a href="eleves.php" class="<?= in_array($currentPage, ['eleves','ajouter-eleve','modifier-eleve']) ? 'active' : '' ?>">
+            <a href="classes.php" class="<?= in_array($currentPage, ['classes', 'ajouter-classe', 'modifier-classe', 'details-classe']) ? 'active' : '' ?>">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                Gestion des salles
+            </a>
+            <a href="eleves.php" class="<?= in_array($currentPage, ['eleves', 'ajouter-eleve', 'modifier-eleve', 'details-eleve']) ? 'active' : '' ?>">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Gestion des élèves
             </a>
-            <a href="enseignants.php" class="<?= in_array($currentPage, ['enseignants','ajouter-enseignant','modifier-enseignant']) ? 'active' : '' ?>">
+            <a href="enseignants.php" class="<?= in_array($currentPage, ['enseignants', 'ajouter-enseignant', 'modifier-enseignant', 'details-enseignant']) ? 'active' : '' ?>">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Gestion des enseignants
-            </a>
-            <a href="effectifs.php" class="<?= $currentPage === 'effectifs' ? 'active' : '' ?>">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                Effectifs
             </a>
             <hr class="sidebar-divider">
             <a href="../deconnexion.php" class="logout-link">

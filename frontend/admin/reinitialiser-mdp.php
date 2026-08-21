@@ -1,6 +1,7 @@
 <?php
 $pageTitle = 'Réinitialiser le mot de passe';
-require_once __DIR__ . '/header.php';
+require_once __DIR__ . '/../../backend/includes/auth.php';
+requireAdmin();
 require_once __DIR__ . '/../../backend/config/database.php';
 require_once __DIR__ . '/../../backend/includes/password_policy.php';
 require_once __DIR__ . '/../../backend/includes/NotificationService.php';
@@ -28,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1. Génération d'un mot de passe aléatoire (jamais visible par l'admin)
     $newPassword = generateRandomPassword(12);
 
-    // 2. Envoi direct à l'utilisateur (Gmail prioritaire, SMS en secours)
+    // 2. Envoi direct à l'utilisateur par e-mail Gmail
     $results = NotificationService::sendCredentials(
         $compte['email'],
         $compte['telephone'],
@@ -48,26 +49,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status = 'echec';
     }
 }
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <div class="form-card">
     <?php if ($_SERVER['REQUEST_METHOD'] !== 'POST'): ?>
     <h3>Réinitialiser le mot de passe</h3>
-
-    <p style="margin-bottom: 1rem;">
-        Vous êtes sur le point de réinitialiser le mot de passe de
-        <strong><?= htmlspecialchars($compte['prenom'] . ' ' . $compte['nom']) ?></strong>
-        (<?= htmlspecialchars($compte['email']) ?>).
-    </p>
+    <p class="form-legend">Compte concerné : <strong><?= htmlspecialchars($compte['prenom'] . ' ' . $compte['nom']) ?></strong> (<?= htmlspecialchars($compte['email']) ?>)</p>
 
     <div style="background:#fef9e7; border:1px solid #f7dc6f; border-radius:10px; padding:1rem; margin-bottom:1.2rem; font-size:0.88rem; color:#7d6608;">
-        Un <strong>nouveau mot de passe aléatoire</strong> sera généré et envoyé <strong>directement</strong> à l'utilisateur :
-        <ul style="margin:0.5rem 0 0 1.2rem;">
-            <li>par e-mail Gmail sur <strong><?= htmlspecialchars($compte['email']) ?></strong></li>
-            <?php if ($compte['telephone']): ?>
-                <li>par SMS au <strong><?= htmlspecialchars($compte['telephone']) ?></strong> si l'e-mail échoue</li>
-            <?php endif; ?>
-        </ul>
+        Un <strong>nouveau mot de passe aléatoire</strong> sera généré et envoyé <strong>directement</strong> à l'utilisateur
+        par e-mail Gmail sur <strong><?= htmlspecialchars($compte['email']) ?></strong>.
         Pour des raisons de sécurité, <strong>ce mot de passe ne vous sera pas affiché</strong>.
         L'utilisateur devra le changer à sa prochaine connexion.
     </div>
@@ -93,11 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             E-mail envoyé à <strong><?= htmlspecialchars($compte['email']) ?></strong>
             <?= MailService::isConfigured() ? '' : '<em>(mode simulation locale — consultez backend/logs/mail.log)</em>' ?>
         </div>
-    <?php elseif (isset($results['sms']) && $results['sms']['success']): ?>
-        <div style="background:#f0f6fc; border:1px solid #d4e6f1; border-radius:10px; padding:1rem; margin-bottom:1rem; font-size:0.88rem;">
-            L'e-mail n'a pas pu partir ; un <strong>SMS</strong> a été envoyé au
-            <strong><?= htmlspecialchars($compte['telephone']) ?></strong>.
-        </div>
     <?php endif; ?>
 
     <p style="color:#888; font-size:0.85rem; margin-bottom:1.5rem;">
@@ -113,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h3>Échec de l'envoi</h3>
 
     <div class="alert alert-error">
-        Le mot de passe n'a pas pu être envoyé (e-mail injoignable et aucun numéro de téléphone valide).
+        Le mot de passe n'a pas pu être envoyé par e-mail.
         <strong>Rien n'a été modifié</strong> : l'ancien mot de passe reste actif.
     </div>
 
