@@ -436,8 +436,10 @@
 
 .actions-cell {
     display: flex;
+    align-items: center;
+    justify-content: flex-start;
     gap: 0.4rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .data-table .actions-cell .btn {
@@ -445,6 +447,8 @@
     height: 32px;
     padding: 0;
     justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
     border-radius: 9px;
     background-color: #f1f5f9;
     color: #64748b;
@@ -484,7 +488,7 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     padding: 2.5rem;
     width: 100%;
-    max-width: 780px;
+    max-width: none;
     margin: 0 auto;
     border: 1px solid #eef1f5;
     animation: fadeInUp 0.4s ease-out;
