@@ -4,9 +4,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 function getBasePath() {
-    $docroot = $_SERVER['DOCUMENT_ROOT'];
-    $scriptdir = dirname(dirname(dirname($_DIR__)));
-    return rtrim(str_replace('\\', '/', str_replace($docroot, '', $scriptdir)), '/');
+    $docroot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '/');
+    $scriptdir = str_replace('\\', '/', dirname(dirname(__DIR__)));
+    return rtrim(str_replace($docroot, '', $scriptdir), '/');
 }
 
 function noCache() {

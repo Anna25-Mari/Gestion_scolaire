@@ -65,6 +65,7 @@ $comptes = $pdo->query('SELECT * FROM utilisateurs ORDER BY date_creation DESC')
                 <th>#</th>
                 <th>Nom complet</th>
                 <th>Email</th>
+                <th>Téléphone</th>
                 <th>Rôle</th>
                 <th>Statut</th>
                 <th>Date création</th>
@@ -77,6 +78,7 @@ $comptes = $pdo->query('SELECT * FROM utilisateurs ORDER BY date_creation DESC')
                 <td><?= $compte['id'] ?></td>
                 <td><?= htmlspecialchars($compte['prenom'] . ' ' . $compte['nom']) ?></td>
                 <td><?= htmlspecialchars($compte['email']) ?></td>
+                <td><?= $compte['telephone'] ? htmlspecialchars($compte['telephone']) : '-' ?></td>
                 <td><span class="badge badge-<?= $compte['role'] ?>"><?= ucfirst($compte['role']) ?></span></td>
                 <td><span class="badge badge-<?= $compte['statut'] ?>"><?= ucfirst($compte['statut']) ?></span></td>
                 <td><?= date('d/m/Y', strtotime($compte['date_creation'])) ?></td>
@@ -85,7 +87,7 @@ $comptes = $pdo->query('SELECT * FROM utilisateurs ORDER BY date_creation DESC')
                         <a href="modifier-compte.php?id=<?= $compte['id'] ?>" class="btn btn-primary btn-sm" title="Modifier">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </a>
-                        <a href="reinitialiser-mdp.php?id=<?= $compte['id'] ?>" class="btn btn-warning btn-sm" title="Réinitialiser MDP" data-confirm="Réinitialiser le mot de passe de ce compte ?">
+                        <a href="reinitialiser-mdp.php?id=<?= $compte['id'] ?>" class="btn btn-warning btn-sm" title="Réinitialiser MDP" data-confirm="Réinitialiser le mot de passe de ce compte ? Un nouveau mot de passe sera envoyé directement à l'utilisateur par e-mail (ou SMS).">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         </a>
                         <?php if ($compte['id'] != $_SESSION['user_id']): ?>

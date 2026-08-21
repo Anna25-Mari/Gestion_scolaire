@@ -1,6 +1,7 @@
 <?php
 $pageTitle = 'Modifier un compte';
-require_once __DIR__ . '/header.php';
+require_once __DIR__ . '/../../backend/includes/auth.php';
+requireAdmin();
 require_once __DIR__ . '/../../backend/config/database.php';
 
 $pdo = getConnection();
@@ -24,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nom = trim($_POST['nom'] ?? '');
     $prenom = trim($_POST['prenom'] ?? '');
     $email = trim($_POST['email'] ?? '');
+    $telephone = trim($_POST['telephone'] ?? '');
     $role = $_POST['role'] ?? $compte['role'];
 
     if (empty($nom) || empty($prenom) || empty($email)) {
@@ -36,13 +38,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($check->fetch()) {
             $error = 'Cet email est déjà utilisé.';
         } else {
-            $update = $pdo->prepare('UPDATE utilisateurs SET nom = ?, prenom = ?, email = ?, role = ? WHERE id = ?');
-            $update->execute([$nom, $prenom, $email, $role, $id]);
+            $update = $pdo->prepare('UPDATE utilisateurs SET nom = ?, prenom = ?, email = ?, telephone = ?, role = ? WHERE id = ?');
+            $update->execute([$nom, $prenom, $email, $telephone ?: null, $role, $id]);
             header('Location: comptes.php?msg=modifier');
             exit;
         }
     }
 }
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <div class="form-card">
@@ -64,6 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="form-group">
             <label for="email">Adresse e-mail</label>
             <input type="email" id="email" name="email" required value="<?= htmlspecialchars($_POST['email'] ?? $compte['email']) ?>">
+        </div>
+        <div class="form-group">
+            <label for="telephone">Numéro de téléphone</label>
+            <input type="tel" id="telephone" name="telephone" placeholder="Ex: 690000000" value="<?= htmlspecialchars($_POST['telephone'] ?? $compte['telephone']) ?>">
         </div>
         <div class="form-group">
             <label for="role">Rôle</label>

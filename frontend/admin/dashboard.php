@@ -8,9 +8,21 @@ $pdo = getConnection();
 $totalComptes = $pdo->query('SELECT COUNT(*) FROM utilisateurs')->fetchColumn();
 $totalAdmins = $pdo->query("SELECT COUNT(*) FROM utilisateurs WHERE role = 'admin'")->fetchColumn();
 $totalDirecteurs = $pdo->query("SELECT COUNT(*) FROM utilisateurs WHERE role = 'directeur'")->fetchColumn();
-$totalActifs = $pdo->query("SELECT COUNT(*) FROM utilisateurs WHERE statut = 'actif'")->fetchColumn();
 $totalInactifs = $pdo->query("SELECT COUNT(*) FROM utilisateurs WHERE statut = 'inactif'")->fetchColumn();
+
+$totalCycles = $pdo->query('SELECT COUNT(*) FROM cycles')->fetchColumn();
+$totalClasses = $pdo->query('SELECT COUNT(*) FROM classes')->fetchColumn();
+$totalEleves = $pdo->query('SELECT COUNT(*) FROM eleves')->fetchColumn();
+$totalEnseignants = $pdo->query('SELECT COUNT(*) FROM enseignants')->fetchColumn();
+
 $derniersComptes = $pdo->query('SELECT nom, prenom, email, role, statut, date_creation FROM utilisateurs ORDER BY date_creation DESC LIMIT 5')->fetchAll();
+$derniersEleves = $pdo->query('
+    SELECT e.nom, e.prenom, e.sexe, c.nom as classe_nom, e.date_inscription
+    FROM eleves e
+    LEFT JOIN classes c ON e.classe_id = c.id
+    ORDER BY e.date_inscription DESC, e.id DESC
+    LIMIT 5
+')->fetchAll();
 ?>
 
 <div class="stats-grid">
@@ -25,11 +37,38 @@ $derniersComptes = $pdo->query('SELECT nom, prenom, email, role, statut, date_cr
     </div>
     <div class="stat-card">
         <div class="stat-icon green">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16.2 7.8l-2 6.3-6.4 2.1 2-6.3z"/></svg>
         </div>
         <div class="stat-info">
-            <h3><?= $totalAdmins ?></h3>
-            <p>Administrateurs</p>
+            <h3><?= $totalCycles ?></h3>
+            <p>Cycles</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
+        <div class="stat-info">
+            <h3><?= $totalClasses ?></h3>
+            <p>Classes</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="stat-info">
+            <h3><?= $totalEleves ?></h3>
+            <p>Élèves</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="stat-info">
+            <h3><?= $totalEnseignants ?></h3>
+            <p>Enseignants</p>
         </div>
     </div>
     <div class="stat-card">
@@ -48,6 +87,15 @@ $derniersComptes = $pdo->query('SELECT nom, prenom, email, role, statut, date_cr
         <div class="stat-info">
             <h3><?= $totalInactifs ?></h3>
             <p>Comptes inactifs</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="stat-info">
+            <h3 style="font-size:1rem; line-height:2.2;">Importer</h3>
+            <p>Données Excel</p>
         </div>
     </div>
 </div>
@@ -79,6 +127,42 @@ $derniersComptes = $pdo->query('SELECT nom, prenom, email, role, statut, date_cr
             <?php endforeach; ?>
         </tbody>
     </table>
+</div>
+
+<div class="table-card">
+    <div class="table-header">
+        <h3>Derniers élèves inscrits</h3>
+        <a href="eleves.php" class="btn btn-primary btn-sm">Voir tout</a>
+    </div>
+    <?php if (count($derniersEleves) > 0): ?>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Sexe</th>
+                <th>Classe</th>
+                <th>Inscrit le</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($derniersEleves as $eleve): ?>
+            <tr>
+                <td><?= htmlspecialchars($eleve['nom']) ?></td>
+                <td><?= htmlspecialchars($eleve['prenom']) ?></td>
+                <td><?= $eleve['sexe'] === 'M' ? 'Garçon' : 'Fille' ?></td>
+                <td><?= $eleve['classe_nom'] ? htmlspecialchars($eleve['classe_nom']) : '<em style="color:#aaa">Non assigné</em>' ?></td>
+                <td><?= date('d/m/Y', strtotime($eleve['date_inscription'])) ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php else: ?>
+    <div style="padding:2rem;text-align:center;color:#888;">
+        <p>Aucun élève inscrit pour le moment.</p>
+        <a href="importer.php" class="btn btn-primary btn-sm" style="margin-top:0.8rem;">Importer depuis Excel</a>
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php require_once __DIR__ . '/footer.php'; ?>

@@ -1,9 +1,21 @@
 <?php
-$pageTitle = 'Consultation des enseignants';
-require_once __DIR__ . '/header.php';
+$pageTitle = 'Gestion des enseignants';
+require_once __DIR__ . '/../../backend/includes/auth.php';
+requireAdmin();
 require_once __DIR__ . '/../../backend/config/database.php';
 
 $pdo = getConnection();
+
+if (isset($_GET['action']) && isset($_GET['id'])) {
+    if ($_GET['action'] === 'supprimer') {
+        $stmt = $pdo->prepare('DELETE FROM enseignants_classes WHERE enseignant_id = ?');
+        $stmt->execute([$_GET['id']]);
+        $stmt = $pdo->prepare('DELETE FROM enseignants WHERE id = ?');
+        $stmt->execute([$_GET['id']]);
+        header('Location: enseignants.php?msg=supprimer');
+        exit;
+    }
+}
 
 $search = trim($_GET['q'] ?? '');
 if ($search) {
@@ -38,6 +50,8 @@ if (count($enseignants) > 0) {
         $classesMap[$row['enseignant_id']][] = $row['nom'];
     }
 }
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <?php if (isset($_GET['msg'])): ?>
@@ -54,8 +68,6 @@ if (count($enseignants) > 0) {
     <?php endif; ?>
 <?php endif; ?>
 
-<div class="alert alert-success" style="margin-bottom:1rem;">Mode consultation : la gestion des enseignants est réservée à l'administrateur.</div>
-
 <div class="table-card">
     <div class="table-header">
         <form method="GET" action="enseignants.php" style="display:flex;gap:0.5rem;align-items:center;">
@@ -65,6 +77,10 @@ if (count($enseignants) > 0) {
                 <a href="enseignants.php" class="btn btn-cancel btn-sm">Effacer</a>
             <?php endif; ?>
         </form>
+        <a href="ajouter-enseignant.php" class="btn btn-primary btn-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Ajouter
+        </a>
     </div>
     <?php if (count($enseignants) > 0): ?>
     <table class="data-table">
@@ -73,8 +89,10 @@ if (count($enseignants) > 0) {
                 <th>#</th>
                 <th>Nom complet</th>
                 <th>Email</th>
+                <th>Téléphone</th>
                 <th>Spécialité</th>
                 <th>Classes</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -83,6 +101,7 @@ if (count($enseignants) > 0) {
                 <td><?= $ens['id'] ?></td>
                 <td><strong><?= htmlspecialchars($ens['prenom'] . ' ' . $ens['nom']) ?></strong></td>
                 <td><?= $ens['email'] ? htmlspecialchars($ens['email']) : '-' ?></td>
+                <td><?= $ens['telephone'] ? htmlspecialchars($ens['telephone']) : '-' ?></td>
                 <td><?= $ens['specialite'] ? htmlspecialchars($ens['specialite']) : '-' ?></td>
                 <td>
                     <?php if (!empty($classesMap[$ens['id']])): ?>
@@ -93,6 +112,16 @@ if (count($enseignants) > 0) {
                         <em style="color:#aaa;">Aucune</em>
                     <?php endif; ?>
                 </td>
+                <td>
+                    <div class="actions-cell">
+                        <a href="modifier-enseignant.php?id=<?= $ens['id'] ?>" class="btn btn-primary btn-sm" title="Modifier">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </a>
+                        <a href="?action=supprimer&id=<?= $ens['id'] ?>" class="btn btn-danger btn-sm" title="Supprimer" data-confirm="Supprimer cet enseignant définitivement ?">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </a>
+                    </div>
+                </td>
             </tr>
             <?php endforeach; ?>
         </tbody>
@@ -100,6 +129,9 @@ if (count($enseignants) > 0) {
     <?php else: ?>
     <div style="padding:2rem;text-align:center;color:#888;">
         <p><?= $search ? 'Aucun enseignant trouvé pour "'.$search.'"' : 'Aucun enseignant enregistré.' ?></p>
+        <?php if (!$search): ?>
+            <a href="ajouter-enseignant.php" class="btn btn-primary btn-sm" style="margin-top:0.8rem;">Ajouter un enseignant</a>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 </div>

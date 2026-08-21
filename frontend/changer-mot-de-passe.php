@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../backend/includes/auth.php';
 require_once __DIR__ . '/../backend/config/database.php';
+require_once __DIR__ . '/../backend/includes/password_policy.php';
 
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['must_change_password'])) {
     header('Location: login.php');
@@ -23,8 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!password_verify($currentPassword, $user['password'])) {
         $error = 'Le mot de passe actuel est incorrect.';
-    } elseif (strlen($newPassword) < 6) {
-        $error = 'Le nouveau mot de passe doit contenir au moins 6 caracteres.';
+    } elseif (($policyError = validatePasswordPolicy($newPassword)) !== true) {
+        $error = $policyError;
     } elseif ($newPassword !== $confirmPassword) {
         $error = 'Les deux mots de passe ne correspondent pas.';
     } elseif ($currentPassword === $newPassword) {
@@ -181,11 +182,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <div class="form-group">
                     <label for="new_password">Nouveau mot de passe</label>
-                    <input type="password" id="new_password" name="new_password" placeholder="Minimum 6 caracteres" required minlength="6">
+                    <input type="password" id="new_password" name="new_password" placeholder="Minimum 8 caracteres, majuscule, minuscule et chiffre" required minlength="8">
+                    <small style="display:block; color:#888; font-size:0.78rem; margin-top:0.3rem;">
+                        Minimum 8 caractères, avec au moins une lettre majuscule, une lettre minuscule et un chiffre.
+                    </small>
                 </div>
                 <div class="form-group">
                     <label for="confirm_password">Confirmer le nouveau mot de passe</label>
-                    <input type="password" id="confirm_password" name="confirm_password" placeholder="Retapez le nouveau mot de passe" required minlength="6">
+                    <input type="password" id="confirm_password" name="confirm_password" placeholder="Retapez le nouveau mot de passe" required minlength="8">
                 </div>
                 <button type="submit" class="btn-submit">Modifier le mot de passe</button>
             </form>
